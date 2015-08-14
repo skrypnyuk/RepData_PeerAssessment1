@@ -4,10 +4,11 @@ output:
   html_document:
     keep_md: true
 ---
+# Analysing activity patterns
 
-Loading and preprocessing the data
+### Loading and preprocessing the data
+
 ```{r, echo=TRUE}
-## unzip ("activity.zip", exdir = "./")
 mydata<-read.csv("activity.csv",header=TRUE)
 library(plyr)
 library(lattice)
@@ -15,49 +16,67 @@ library(lubridate)
 mydata$date<-ymd(mydata$date)
 ```
 
+### Statistics for average number of steps per day 
 
-What is mean total number of steps taken per day?
+Distribution of the total number of steps taken per day
 ```{r, echo=TRUE}
 
 histogram(aggregate(steps ~ date, mydata, sum)$steps,xlab="Sum of steps per day")
+```
 
+Mean number of steps taken per day:
+
+```{r, echo=TRUE}
 mean(aggregate(steps ~ date, mydata, sum)$steps)
+```
 
+Median of the number of steps taken per day: 
+
+```{r, echo=TRUE}
 median(aggregate(steps ~ date, mydata, sum)$steps)
 ```
 
 
-What is the average daily activity pattern?
+### Average daily activity pattern
+
 ```{r, echo=TRUE}
 
 pattern<-aggregate(steps ~ interval, mydata, mean)
 
-xyplot(steps~interval, data = pattern, type="l")
+xyplot(steps~seq_along(steps), data = pattern, type="l", 
+       xlab="Intervals with 5 minutes duration",
+       ylab="Average number of steps")
 
-#plot(pattern$steps,type="l")
+
 ```
 
 The maximum (averaged) number of steps in all time intervals is 
 ```{r, echo=TRUE}
-m<-max(pattern$steps)
+m<-max(pattern$steps);
+  
+m  
 ```
 
 
-It occured in the interval
+It occured in the 5 minutes interval between
 ```{r, echo=TRUE}
 mint<-which(pattern$steps==m)
 
-print(mint)
+seconds_to_period(mint*5*60)
 
-print(mint*5/60)
+```
 
-seconds_to_period(mint*5*60)##???
+and 
 
-seconds_to_period((mint+1)*5*60)##???
+```{r, echo=TRUE}
+seconds_to_period((mint+1)*5*60)
 ```
 
 
-Imputing missing values. In the original data there is a considerable number of missing values, namely
+### Imputing missing values
+
+In the original data there is a considerable number of missing values, namely
+
 ```{r, echo=TRUE}
 
 sum(is.na(mydata$steps))
@@ -66,6 +85,7 @@ sum(is.na(mydata$steps))
 
 
 We have taken the following approach to filling the missing values: take the average of all available data for that interval and assign this number to all corresponding intervals with missing data.
+
 ```{r, echo=TRUE}
 impute <- function(df,pattern,intv) {
 
@@ -86,18 +106,21 @@ histogram(aggregate(steps ~ date, myimputeddata, sum)$steps,
 ```
 
 
-The newly calculated mean with missing values thus filled does not differ from the old mean, which is exactly what we would expect:
+The newly calculated mean with missing values filled in this way does not differ from the old mean, which is exactly what we would expect:
+
 ```{r, echo=TRUE}
 mean(aggregate(steps ~ date, myimputeddata, sum)$steps)
 ```
 
-The newly calculated median with missing values thus filled differs very slightly, it is a little bit bigger than the old meadian. This is also not strange.
+The newly calculated median with missing values filled in this way differs very slightly from the old median (it is in fact equal to the mean). It is a little bit bigger than the old median, which is not surprising:
+
 ```{r, echo=TRUE}
 median(aggregate(steps ~ date, myimputeddata, sum)$steps)
 ```
 
 
-Are there differences in activity patterns between weekdays and weekends?
+### Differences in activity patterns between weekdays and weekends
+
 ```{r, echo=TRUE}
 
 computedaytype <- function(date) {
@@ -114,7 +137,11 @@ myimputeddata<-transform(myimputeddata, daytype=computedaytype(myimputeddata$dat
 
 pattern2<-aggregate(steps ~ interval+daytype, myimputeddata, mean)
 
-xyplot(steps~interval | daytype, data = pattern2, type="l")
+pattern2<-transform(pattern2,ninterval=c(1:288,1:288))
+
+xyplot(steps~ninterval | daytype, data = pattern2, type="l", layout=c(1,2),
+       xlab="Intervals with 5 minutes duration",
+       ylab="Average number of steps")
 
 ```
 
